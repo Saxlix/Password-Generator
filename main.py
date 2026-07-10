@@ -146,3 +146,113 @@ class AdvancedDicewareApp(QWidget):
         self.btn_generate.clicked.connect(self._on_generate_clicked)
         self.btn_copy.clicked.connect(self._on_copy_clicked)
         self.btn_export.clicked.connect(self._on_export_clicked)
+
+    def _apply_qss(self):
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #f8f9fa;
+                font-family: "Segoe UI", Arial;
+                font-size: 14px;
+                color: #2d3436;
+            }
+            QLabel {
+                font-weight: 600;
+            }
+            QSpinBox {
+                background-color: #ffffff;
+                border: 1px solid #b2bec3;
+                border-radius: 6px;
+                padding: 6px;
+                min-width: 90px;
+            }
+            QLineEdit {
+                background-color: #ffffff;
+                border: 2px solid #b2bec3;
+                border-radius: 8px;
+                padding: 8px;
+                color: #2d3436;
+            }
+            QLineEdit:focus {
+                border: 2px solid #0984e3;
+            }
+            QPushButton {
+                background-color: #0984e3;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #0284c7;
+            }
+            QPushButton#btn_generate {
+                background-color: #10b981;
+                font-size: 15px;
+            }
+            QPushButton#btn_generate:hover {
+                background-color: #059669;
+            }
+            QLabel#lbl_image_preview {
+                border: 2px dashed #b2bec3;
+                background-color: #ffffff;
+                color: #636e72;
+                border-radius: 8px;
+                font-weight: normal;
+            }
+        """)
+
+    def _update_length_constraints(self):
+        if self.spin_min_len.value() > self.spin_max_len.value():
+            self.spin_max_len.setValue(self.spin_min_len.value())
+
+    def _evaluate_strength(self, word_count):
+        if word_count <= 4:
+            return "Слабый пароль. Рекомендуется увеличить количество слов.", "color: #e67e22; font-weight: bold;"
+        elif word_count <= 6:
+            return "Хороший и надежный пароль", "color: #27ae60; font-weight: bold;"
+        elif word_count <= 8:
+            return "Отличная защита (высокая стойкость)", "color: #2980b9; font-weight: bold;"
+        else:
+            return "Максимальный уровень стойкости", "color: #8e44ad; font-weight: bold;"
+
+    def _on_generate_clicked(self):
+        word_count = self.spin_word_count.value()
+        min_len = self.spin_min_len.value()
+        max_len = self.spin_max_len.value()
+
+        if min_len > max_len:
+            QMessageBox.warning(self, "Ошибка валидации",
+                                "Минимальная длина слова не может превышать максимальную.")
+            return
+
+        phrase, separator = self.generator.generate(word_count, min_len, max_len)
+
+        if not phrase:
+            QMessageBox.warning(self, "Внимание",
+                                f"Не удалось найти слова длиной от {min_len} до {max_len} букв.\n"
+                                "Пожалуйста, измените настройки диапазона.")
+            return
+
+        self.txt_result.setText(phrase)
+
+        status_text, status_style = self._evaluate_strength(word_count)
+        self.lbl_strength.setText(f"Надежность пароля: {status_text}")
+        self.lbl_strength.setStyleSheet(status_style)
+
+        img_path = self._create_password_image(phrase)
+
+        try:
+            pil_img = Image.open(img_path)
+            pil_img = pil_img.resize((600, 130), Image.Resampling.LANCZOS)
+
+            byte_array = BytesIO()
+            pil_img.save(byte_array, format='PNG')
+            qt_image = QImage.fromData(byte_array.getvalue())
+            pixmap = QPixmap.fromImage(qt_image)
+
+            self.lbl_image_preview.setPixmap(pixmap)
+            self.lbl_image_preview.setScaledContents(True)
+        except Exception as e:
+            logging.error(f"Image scaling error: {e}")
+
+        self.db.save_phrase(phrase, word_count, separator, status_text, img_path)
