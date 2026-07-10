@@ -328,3 +328,9 @@ def log_uncaught_exceptions(exctype, value, tb):
 
 
 sys.excepthook = log_uncaught_exceptions
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    ex = AdvancedDicewareApp()
+    ex.show()
+    sys.exit(app.exec_())
