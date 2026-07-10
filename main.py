@@ -291,3 +291,40 @@ class AdvancedDicewareApp(QWidget):
             logging.info("Copied to clipboard.")
         else:
             QMessageBox.warning(self, "Внимание", "Сначала сгенерируйте фразу.")
+
+    def _on_export_clicked(self):
+        history = self.db.get_all_phrases()
+        if not history:
+            QMessageBox.information(self, "Информация", "История генераций пуста.")
+            return
+
+        try:
+            with open("history_export.txt", "w", encoding="utf-8") as file:
+                file.write("=== ИСТОРИЯ ГЕНЕРАЦИЙ ===\n\n")
+                for record in history:
+                    file.write(f"[{record[0]}] {record[1]} | {record[2]}\n")
+            QMessageBox.information(self, "Успешно", "История экспортирована в файл 'history_export.txt'")
+            logging.info("Export success.")
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось экспортировать данные: {e}")
+
+    def closeEvent(self, event):
+        reply = QMessageBox.question(
+            self, 'Подтверждение выхода',
+            "Вы действительно хотите закрыть генератор паролей?",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+        )
+
+        if reply == QMessageBox.Yes:
+            logging.info("Application closed by user.")
+            event.accept()
+        else:
+            event.ignore()
+
+
+def log_uncaught_exceptions(exctype, value, tb):
+    logging.critical("Uncaught exception!", exc_info=(exctype, value, tb))
+    sys.__excepthook__(exctype, value, tb)
+
+
+sys.excepthook = log_uncaught_exceptions
