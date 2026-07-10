@@ -256,3 +256,38 @@ class AdvancedDicewareApp(QWidget):
             logging.error(f"Image scaling error: {e}")
 
         self.db.save_phrase(phrase, word_count, separator, status_text, img_path)
+
+    def _create_password_image(self, text):
+        img = Image.new('RGB', (800, 200), color='#ffffff')
+        canvas = ImageDraw.Draw(img)
+
+        try:
+            font_title = ImageFont.truetype("arial.ttf", 24)
+            font_password = ImageFont.truetype("arial.ttf", 28)
+        except IOError:
+            try:
+                font_title = ImageFont.load_default(size=24)
+                font_password = ImageFont.load_default(size=28)
+            except TypeError:
+                font_title = ImageFont.load_default()
+                font_password = ImageFont.load_default()
+
+        canvas.text((40, 40), "Ваш сгенерированный пароль:", fill='#7f8c8d', font=font_title)
+        canvas.text((40, 100), text, fill='#2c3e50', font=font_password)
+
+        filename = "password_card.png"
+        img.save(filename)
+        return filename
+
+    def _on_copy_clicked(self):
+        phrase = self.txt_result.text()
+        if phrase:
+            clipboard = QApplication.clipboard()
+            clipboard.setText(phrase)
+
+            self.btn_copy.setText("Скопировано")
+            self.btn_copy.setEnabled(False)
+            QTimer.singleShot(1500, lambda: [self.btn_copy.setText("Копировать"), self.btn_copy.setEnabled(True)])
+            logging.info("Copied to clipboard.")
+        else:
+            QMessageBox.warning(self, "Внимание", "Сначала сгенерируйте фразу.")
