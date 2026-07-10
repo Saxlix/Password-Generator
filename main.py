@@ -119,3 +119,30 @@ class DicewareGenerator:
         random_sep = random.choice(self.separators)
         phrase = random_sep.join(selected_words)
         return phrase, random_sep
+
+
+class AdvancedDicewareApp(QWidget):
+    def __init__(self):
+        super().__init__()
+        self._setup_ui()
+        self._data_layer()
+        self._logic()
+        self._bind_signals()
+        self._apply_qss()
+
+    def _setup_ui(self):
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        ui_path = os.path.join(base_dir, "window.ui")
+        loadUi(ui_path, self)
+
+    def _data_layer(self):
+        self.db = PhraseDatabase()
+
+    def _logic(self):
+        self.generator = DicewareGenerator()
+
+    def _bind_signals(self):
+        self.spin_min_len.valueChanged.connect(self._update_length_constraints)
+        self.btn_generate.clicked.connect(self._on_generate_clicked)
+        self.btn_copy.clicked.connect(self._on_copy_clicked)
+        self.btn_export.clicked.connect(self._on_export_clicked)
