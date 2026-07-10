@@ -83,3 +83,39 @@ class PhraseDatabase:
             if conn:
                 conn.close()
         return data
+
+
+class DicewareGenerator:
+    def __init__(self, dictionary_path="diceware_words.txt"):
+        self.dictionary_path = dictionary_path
+        self.words = []
+        self.separators = ["-", "_", ".", "$", "*", "!", "#", "~"]
+        self._load_dictionary()
+
+    def _load_dictionary(self):
+        if os.path.exists(self.dictionary_path):
+            try:
+                with open(self.dictionary_path, "r", encoding="utf-8") as file:
+                    self.words = [line.strip() for line in file if line.strip()]
+                if not self.words:
+                    self._set_fallback_words("Dictionary empty.")
+                else:
+                    logging.info(f"Loaded words: {len(self.words)}")
+            except Exception as e:
+                self._set_fallback_words(f"Read error: {e}")
+        else:
+            self._set_fallback_words("File not found.")
+
+    def _set_fallback_words(self, message):
+        logging.warning(message)
+        self.words = ["дом", "гора", "солнце", "кошка", "поезд", "стол", "студент", "микрофон", "река"]
+
+    def generate(self, word_count, min_len, max_len):
+        filtered = [w for w in self.words if min_len <= len(w) <= max_len]
+        if not filtered:
+            logging.warning("No words found matching criteria.")
+            return None, None
+        selected_words = [random.choice(filtered) for _ in range(word_count)]
+        random_sep = random.choice(self.separators)
+        phrase = random_sep.join(selected_words)
+        return phrase, random_sep
