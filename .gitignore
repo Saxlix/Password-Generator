@@ -1,0 +1,11 @@
+.venv/
+**pycache**/
+*.pyc
+*.db
+app.log
+history_export.txt
+password_card.png
+cards/
+dist/
+build/
+*.spec
